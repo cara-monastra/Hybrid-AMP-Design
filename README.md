@@ -1,160 +1,172 @@
 # Hybrid-AMP-Design
-Hybrid AMP Design: Single-Driver Notebook
 
-This repository contains a single Jupyter notebook, full single driver.ipynb, that implements three antimicrobial peptide (AMP) design strategies and evaluates them under a common set of filters and proxy metrics:
+A comprehensive Jupyter notebook implementation for antimicrobial peptide (AMP) design using three distinct strategies with unified evaluation metrics.
 
-Motif-preserving interpolation
+## Overview
 
-Property-conditioned cVAE (FiLM-conditioned encoder and decoder)
+This repository contains `full single driver.ipynb`, which implements and compares three AMP design approaches:
 
-Hybrid approach that combines both
+- **Motif-preserving interpolation**
+- **Property-conditioned cVAE** (FiLM-conditioned encoder and decoder)
+- **Hybrid approach** combining both methods
 
-The notebook generates candidates, filters them to favor four-helix bundle feasibility, and reports side-by-side comparisons of predicted activity, predicted toxicity, novelty, and foldability proxies.
+The notebook generates peptide candidates, applies filters optimized for four-helix bundle feasibility, and provides comprehensive side-by-side comparisons of predicted activity, toxicity, novelty, and foldability metrics.
 
-1. What the notebook produces
+##  What You'll Get
 
-After a full run you will have:
+After running the complete notebook:
 
-Three candidate sets: Interpolation, cVAE, Hybrid
+### Generated Datasets
+- **Three candidate sets**: Interpolation, cVAE, and Hybrid approaches
+- **Consolidated results table** with per-method statistics
 
-A consolidated results table with counts and per-arm means for:
+### Key Metrics
+- Activity and toxicity predictions
+- Novelty scores and foldability proxies
+- Helix fraction and hydrophobic moment analysis
+- Composite scoring system
 
-activity, toxicity, novelty, helix_fraction, hydrophobic_moment, composite score
+### Visualizations
+- Yield and pass-rate comparisons
+- Activity vs. toxicity scatter plots
+- Novelty and foldability distributions
+- cVAE training curves (reconstruction, KL, auxiliary loss)
+
+### Saved Outputs
+- CSV and JSON files with per-sequence properties
+- Methods JSON for full reproducibility
+
+##  Requirements
+
+### Software
+- **Python 3.11**
+- **Jupyter Notebook** or JupyterLab
+- **PyTorch** (GPU optional, CPU supported)
+- **Standard packages**: NumPy, pandas, matplotlib
+
+> **Note**: If CUDA is available, PyTorch will automatically use GPU acceleration. The notebook displays the selected device at startup.
+
+### Data
+- `AMPS2.xlsx` must be placed in the same directory as the notebook
+- File should contain a `Sequence` column with canonical amino acid peptide strings
+- Sequences longer than 68 residues are automatically filtered out
+- Expected dataset split: 416 training sequences, 178 validation sequences
 
-Figures:
+##  Quick Start
 
-Yield and pass-rate comparison
+1. **Setup environment** with required packages
+2. **Place `AMPS2.xlsx`** next to `full single driver.ipynb`
+3. **Open the notebook** in Jupyter
+4. **Run cells sequentially** from top to bottom
+5. **Verify setup** by checking device output and dataset summary
 
-Activity and toxicity comparisons
+Expected output:
+```
+Device: cuda  # or cpu
+Train n=416, Val n=178, MAX_LEN=68
+```
 
-Novelty and foldability distributions
+## 📖 Notebook Structure
 
-cVAE training curves (reconstruction, KL, auxiliary loss)
+### Core Components
 
-Saved artifacts:
+**Setup & Tokenization**
+- 20-residue alphabet plus special tokens (PAD, BOS, EOS)
+- Sequence padding/truncation to length 68
 
-CSV and JSON files with per-sequence properties and scores
+**Physicochemical Properties**
+- Net charge calculation (pH 7.4)
+- Kyte–Doolittle hydrophobicity
+- Chou–Fasman helix propensity
+- Hydrophobic moment and amphipathicity indices
+- Wimley–White interfacial transfer energy proxy
 
-A “methods JSON” that records configuration for reproducibility
+**cVAE Architecture**
+- Bidirectional LSTM encoder with 64D latent space
+- FiLM modulation in encoder/decoder
+- Autoregressive LSTM decoder
+- Training: 40 epochs, Adam optimizer (lr=1e-3)
+- Loss: reconstruction + KL (cyclical beta, free-bits) + auxiliary regression
 
-The results you saw previously were: Interpolation 2,000 raw (1,991 pass), cVAE 34 raw (32 pass), Hybrid 41 raw (39 pass), followed by the metric means reported in your Results section.
+**Generation Methods**
+- **Interpolation**: Property-guided interpolation with motif preservation
+- **Hybrid**: cVAE decoding with interpolated conditioning
 
-2. Software and hardware requirements
+**Evaluation Pipeline**
+- Novelty via k-mer divergence
+- Activity/toxicity heuristics
+- Foldability proxies
+- Comprehensive filtering and scoring
 
-Python 3.11
+##  Reproducing Results
 
-Jupyter Notebook or JupyterLab
+Use these default parameters:
+- `MAX_LEN = 68`
+- `latent_dim = 64` 
+- `epochs = 40`
+- `learning_rate = 1e-3`
+- `n_generate = 2000` (interpolation)
 
-PyTorch (GPU optional; CPU will work but will be slower)
+### Filtering Criteria
+- Length: target ±3 residues
+- Charge: ~+6
+- Helix fraction: >0.6
+- Hydrophobic moment: ~1.5
 
-NumPy, pandas, matplotlib
+**Expected Results**: Interpolation ~2,000 candidates (1,991 pass), cVAE ~34 candidates (32 pass), Hybrid ~41 candidates (39 pass)
 
-If you have CUDA available, PyTorch will select it automatically; the notebook prints the chosen device at the top (“Device: cuda” or “Device: cpu”).
+## Customization Options
 
-3. Data required
+### Adjust Generation Volume
+```python
+n_generate = 5000  # Increase candidate pool
+```
 
-AMPS2.xlsx in the same directory as the notebook.
-This file contains the curated AMP sequences used for training, validation, and property computation. The notebook expects a column named Sequence with peptide strings of canonical amino acids.
+### Modify Property Targets
+```python
+target_props = {
+    'length': 25,
+    'charge': +8,
+    'hydrophobicity': 0.3,
+    # ... customize other properties
+}
+```
 
-The notebook filters out sequences longer than 68 residues to avoid excessive padding. After filtering it uses 416 sequences for training and 178 for validation.
+### Fine-tune Filters
+- **Stricter**: Increase helix fraction threshold
+- **Looser**: Widen hydrophobic moment acceptance range
+- **Novel**: Adjust sampling temperature and KL schedule
 
-4. How to run
+## Metric Interpretation
 
-Create and activate an environment with the packages above.
+| Metric | Purpose | Notes |
+|--------|---------|-------|
+| **Predicted Activity** | Heuristic scoring | For comparative analysis, not MIC replacement |
+| **Predicted Toxicity** | Hemolysis risk assessment | Based on literature thresholds |
+| **Novelty** | k-mer divergence from training | Combine with diversity measures |
+| **Foldability** | Helix fraction + hydrophobic moment | Relevant for four-helix bundles |
 
-Place AMPS2.xlsx next to full single driver.ipynb.
+##  Troubleshooting
 
-Open the notebook and run cells from top to bottom.
+### Common Issues
 
-Confirm the setup cells print your device and that the dataset summary shows the expected split (Train n=416, Val n=178, MAX_LEN=68).
+**File Not Found**: Ensure `AMPS2.xlsx` is in the notebook directory with `Sequence` column
 
-A full run trains the cVAE, builds the interpolation generator, runs all three arms, filters candidates, computes metrics, and renders plots.
+**CPU-Only Execution**: Verify PyTorch-CUDA version compatibility (notebook runs on CPU regardless)
 
-5. What each section does
+**Low cVAE Yield**: 
+- Relax filtering thresholds
+- Reduce early KL pressure  
+- Extend training epochs
+- Check conditioning vector normalization
 
-Setup and tokenization
-Defines the 20-residue alphabet plus special tokens (PAD, BOS, EOS), builds stoi and itos, pads or truncates sequences to length 68.
+**Degenerate Sequences**: 
+- Increase free-bits threshold
+- Verify BOS/EOS handling
+- Check PAD masking in decoder loss
 
-Physicochemical properties
-Computes net charge (pH 7.4), Kyte–Doolittle hydrophobicity, Chou–Fasman helix propensity, hydrophobic moment on an α-helix wheel, an amphipathicity index, and an interfacial transfer energy using a Wimley–White style proxy. Features are normalized and concatenated as conditioning vectors.
 
-cVAE
-Bidirectional LSTM encoder, 64-dimensional latent, FiLM modulation in encoder and decoder, autoregressive LSTM decoder, trained for 40 epochs with Adam at 1e-3. Loss combines reconstruction cross-entropy, KL with cyclical beta and free-bits, plus a light auxiliary regression from latent to properties.
 
-Interpolation generator
-Interpolates between property vectors of training pairs, assembles candidates while preserving motifs and enforcing property targets, then filters on length, charge, helix fraction, and hydrophobic moment.
+3. **Reference scales**: Kyte–Doolittle, Chou–Fasman, Wimley–White property scales
 
-Hybrid arm
-Uses interpolation candidates as pseudo-training augmentation and decodes additional sequences from the cVAE under interpolated conditions. Applies the same filters as interpolation.
 
-Evaluation
-Computes novelty via k-mer divergence from the training set, predicted activity via a property-based heuristic, predicted toxicity via conservative thresholds on hydrophobicity, charge, length, and tryptophan content, and foldability proxies via helix fraction and hydrophobic moment. Consolidates results into a single table and renders plots.
-
-Exports
-Saves per-sequence annotations (CSV and JSON) and a methods JSON with configuration for reproducibility.
-
-6. Reproducing the reported numbers
-
-Use the default hyperparameters in the notebook:
-
-MAX_LEN 68, latent 64, epochs 40, lr 1e-3
-
-Interpolation target settings as provided in the notebook
-
-Interpolation n_generate = 2000
-
-Ensure AMPS2.xlsx has the expected sequences and a Sequence column.
-
-Run all cells without changing the filters:
-
-length within ±3 of target
-
-charge near +6
-
-helix fraction above 0.6
-
-hydrophobic moment around 1.5
-
-You should recover the same order of magnitude counts and similar mean metric values. Exact decimals can drift slightly due to random seeds and GPU nondeterminism.
-
-7. How to tweak experiments
-
-Change throughput
-In the interpolation section, set n_generate to any integer. For example, n_generate = 5000 will produce five thousand candidates before filtering.
-
-Adjust property targets
-Modify the target_props dictionary to steer length, charge, hydrophobicity, helix fraction, hydrophobic moment, amphipathicity, or interfacial energy. This affects both interpolation and the conditioning given to the cVAE.
-
-Tighten or relax filters
-The pass rate is sensitive to thresholds. Raising the helix fraction cutoff or lowering the acceptable hydrophobic moment band will reduce yield and bias toward strongly amphipathic helices.
-
-Encourage more cVAE samples
-Increase the number of latent samples per condition or the number of conditions evaluated. You can also adjust the cyclical KL schedule, free-bits threshold, or sampling temperature to trade novelty against pass rate.
-
-8. Interpreting the metrics
-
-Predicted activity is a heuristic built from net charge, hydrophobicity, and amphipathicity. Use it to compare arms within this project, not as a substitute for MIC assays.
-
-Predicted toxicity reflects conservative rules drawn from AMP toxicology literature. Sequences that violate several thresholds should be viewed as risky for hemolysis.
-
-Novelty is k-mer divergence. Pair it with a global diversity measure if you plan clustering or down-selection.
-
-Foldability proxies (helix fraction, hydrophobic moment) help assess helical amphipathicity relevant to four-helix bundle designs.
-
-9. Troubleshooting
-
-Notebook cannot find AMPS2.xlsx
-Place the file in the same directory as the notebook and confirm the sheet has a Sequence column.
-
-CUDA not used
-If the device prints “cpu,” verify that your PyTorch install matches your CUDA version. The notebook still runs on CPU.
-
-Zero or very low cVAE yield
-Relax filters slightly, reduce KL pressure early in training, or extend training epochs. Ensure conditioning vectors are normalized consistently between training and generation.
-
-All-Ala or collapsed sequences
-Lower label smoothing if used, increase free-bits slightly, and verify that BOS/EOS handling and PAD masking are correct in the decoder loss.
-
-10. Reuse and citation
-
-If you use results or code derived from this notebook in a manuscript or dissertation, please cite your thesis and acknowledge the use of a property-conditioned VAE with FiLM and a motif-preserving interpolation pipeline, along with the AMP property scales used for conditioning (Kyte–Doolittle, Chou–Fasman, Wimley–White).
