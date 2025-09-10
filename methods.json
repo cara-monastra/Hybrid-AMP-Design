@@ -1,0 +1,116 @@
+{
+  "timestamp_utc": "2025-09-10T01:32:21.393820Z",
+  "seed": 42,
+  "environment": {
+    "python": "3.10.18",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "torch": "2.5.1",
+    "cuda_available": true,
+    "device": "cuda",
+    "numpy": "2.0.1",
+    "pandas": "2.2.3"
+  },
+  "data": {
+    "source": "AMPS2.xlsx",
+    "sha256": "958f8733da32e66c21cd55402aa0263e512957d4122ab84a9cf83c34876367f6",
+    "n_train_sequences": 594,
+    "max_len": 68
+  },
+  "tokenizer": {
+    "alphabet": "ACDEFGHIKLMNPQRSTVWY",
+    "pad_idx": 0,
+    "bos_idx": 1,
+    "eos_idx": 2
+  },
+  "model": {
+    "class": "PeptideCVAE",
+    "params": {
+      "vocab_size": 23,
+      "d_model": 256,
+      "z_dim": 64,
+      "c_dim": 7
+    },
+    "conditioning": {
+      "FiLM": true,
+      "CFG_uncond_p": 0.15,
+      "CFG_w": 1.8
+    },
+    "regularization": {
+      "free_bits": 0.5,
+      "label_smoothing": 0.05
+    }
+  },
+  "training": {
+    "epochs": 40,
+    "lr": 0.0003,
+    "beta_max": 0.3,
+    "cycle_epochs": 10,
+    "batch_size": 64,
+    "n_train": 416,
+    "n_val": 178
+  },
+  "generation": {
+    "target_props": {
+      "length": 50,
+      "net_charge": 6.0,
+      "gravy": 0.1,
+      "helix_fraction": 0.6,
+      "hydrophobic_moment": 2.0,
+      "amphipathicity": 1.2,
+      "membrane_energy": -0.1
+    },
+    "n_raw_per_arm": 2000,
+    "max_tries": 200000,
+    "cvae": {
+      "batch_size": 512,
+      "temperature": null,
+      "top_k": null,
+      "CFG_w": 1.8
+    },
+    "interpolation": {
+      "topk_parents": 30,
+      "mut_p": 0.08,
+      "target_len": 50
+    },
+    "hybrid": {
+      "polish_iters": null
+    }
+  },
+  "filters": {
+    "length_range": [
+      35,
+      70
+    ],
+    "net_charge_range": [
+      2,
+      12
+    ],
+    "gravy_range": [
+      -1.2,
+      1.2
+    ],
+    "helix_fraction_min": 0.45,
+    "hydrophobic_moment_min": 0.8,
+    "lm_nll_max": 3.5,
+    "novelty_k": 3
+  },
+  "scoring": {
+    "ti_alpha": 0.7,
+    "lm_bonus_rule": "bonus=(3.5 - lm_nll).clip(0,1.5)/15.0"
+  },
+  "outputs": {
+    "interpolation": [
+      "outputs/interpolation_pass.csv",
+      "outputs/interpolation_pass.fasta"
+    ],
+    "cvae": [
+      "outputs/cvae_pass.csv",
+      "outputs/cvae_pass.fasta"
+    ],
+    "hybrid": [
+      "outputs/hybrid_pass.csv",
+      "outputs/hybrid_pass.fasta"
+    ],
+    "summary": "outputs/summary_comparison.csv"
+  }
+}
